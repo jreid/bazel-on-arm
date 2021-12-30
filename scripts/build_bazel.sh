@@ -25,11 +25,11 @@ fi
 unzip -qqd "${BAZEL_DIR}" "${DIST_FILE}"
 
 # Patch Bazel distribution if there's a patch for this version
-if [ -f "${PATCH}" ]; then
-    # Patch created with (for example):
-    # $ diff -ruN bazel bazel-2 > patches/bazel-3.3.1-arm.patch
-    patch -s -p0 < "${PATCH}"
-fi
+# if [ -f "${PATCH}" ]; then
+#     # Patch created with (for example):
+#     # $ diff -ruN bazel bazel-2 > patches/bazel-3.3.1-arm.patch
+#     patch -s -p0 < "${PATCH}"
+# fi
 
 # Build Bazel
 cd "${BAZEL_DIR}" || exit
