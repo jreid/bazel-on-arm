@@ -1,0 +1,41 @@
+From 30ec5cecb291c0c2ac5c5c3d6f20009d9189d1b9 Mon Sep 17 00:00:00 2001
+From: Brandon Adams <brandon.adams@imc.com>
+Date: Tue, 7 Dec 2021 09:52:04 -0600
+Subject: [PATCH] Prefer getauxval(AT_EXECFN) for qemu-user-static
+
+When using qemu-user-static + binfmt_misc on Linux (e.g.
+running `docker run --platform linux/amd64` on ARM), bazel
+fails to self-extract with a mysterious lseek failure. When
+self-extracting using "/proc/self/exe", the referred binary
+is the qemu-user-static emulator, not the bazel process. Instead,
+we use an alternative API, getauxval(3), which is properly
+populated when running normally on the native host platform
+as well as when using the qemu + binfmt_misc pattern.
+
+Practically, this allows x86_64 versions of bazel to
+self-extract and run under Docker hosted by Linux ARM or M1 Macs.
+---
+ src/main/cpp/blaze_util_linux.cc | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/main/cpp/blaze_util_linux.cc b/src/main/cpp/blaze_util_linux.cc
+index 2183d43f6116..bb1ba1c82711 100644
+--- a/src/main/cpp/blaze_util_linux.cc
++++ b/src/main/cpp/blaze_util_linux.cc
+@@ -21,6 +21,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>  // strerror
++#include <sys/auxv.h>
+ #include <sys/socket.h>
+ #include <sys/stat.h>
+ #include <sys/statfs.h>
+@@ -86,7 +87,7 @@ string GetSelfPath(const char* argv0) {
+   // The file to which this symlink points could change contents or go missing
+   // concurrent with execution of the Bazel client, so we don't eagerly resolve
+   // it.
+-  return "/proc/self/exe";
++  return std::string((char *)getauxval(AT_EXECFN));
+ }
+ 
+ uint64_t GetMillisecondsMonotonic() {

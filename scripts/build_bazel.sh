@@ -17,12 +17,12 @@ PATCH=patches/bazel-"${VERSION}"-arm.patch
 
 # Download and unpack Bazel distribution file
 if [ ! -f "${DIST_FILE}" ]; then
-    wget "${DIST_URL}"
+    curl --retry 3 -sLo "${DIST_FILE}" "${DIST_URL}"
 fi
 if [ -d "${BAZEL_DIR}" ]; then
     rm -rf "${BAZEL_DIR}"
 fi
-unzip -d "${BAZEL_DIR}" "${DIST_FILE}"
+unzip -qqd "${BAZEL_DIR}" "${DIST_FILE}"
 
 # Patch Bazel distribution if there's a patch for this version
 if [ -f "${PATCH}" ]; then
@@ -33,4 +33,7 @@ fi
 
 # Build Bazel
 cd "${BAZEL_DIR}" || exit
+
+patch -s -p1 < ../patches/blaze_util_linux.patch
+
 env EXTRA_BAZEL_ARGS="--host_javabase=@local_jdk//:jdk" bash ./compile.sh
